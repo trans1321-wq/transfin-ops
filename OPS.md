@@ -13,20 +13,20 @@
 - **Вхід:** лише SSH за ключем, `root@46.224.18.229`, ключ `~/.ssh/id_ed25519` на Mac. Вхід за паролем вимкнено (`/etc/ssh/sshd_config.d/10-transfin-hardening.conf`).
 - **Застосунок:** `transfin.service` (systemd, користувач `transfin`, `127.0.0.1:8000`, 1 worker); код у `/home/transfin/backend`, Python 3.12 через uv (`/opt/uv/python`). У unit-файлі `QUEUE_AUTOSTART_IN_WEB=false`, `QUEUE_POLLING_ENABLED=false` — сайт на сервері eCherha **не** читає.
 - **e-TOLL recorder:** `transfin-etoll-recorder.service` (з `deploy/`), користувач `transfin`, логін бази `etoll_recorder`, `MemoryMax=256M`. Стан на 21.09: `active` + `enabled`.
-- **Секрети:** `/etc/transfin/transfin.env` (`root:transfin`, `0640`). Ключі: `DATABASE_URL`, `LEDGER_DATABASE_URL`, `SESSION_SECRET_KEY` (64 символи), `SESSION_COOKIE_SECURE=true`, `LONTEX_ATLAS_BASE_URL/LOGIN/PASSWORD`, `ETOLL_DATABASE_URL`. **Ніколи не друкувати.** Перед запуском коду застосунку на сервері завантажувати: `sudo -u transfin bash -c 'set -a; . /etc/transfin/transfin.env; set +a; …'` (значення не потрапляють в argv).
-- **nginx + Let's Encrypt:** `/etc/nginx/sites-available/transfin`; http і www → https apex; невідомий Host → 444 або відмова TLS; `/docs`, `/redoc`, `/openapi.json` → 404; обмеження частоти на логін. `ALLOWED_HOSTS` у застосунку **ще не задано** (P4 додав перевірку, вмикається змінною) — додати `ALLOWED_HOSTS=transfin.uk,www.transfin.uk` при наступному розгортанні.
+- **Секрети:** `/etc/transfin/transfin.env` (`root:transfin`, `0640`). Ключі: `DATABASE_URL`, `LEDGER_DATABASE_URL`, `SESSION_SECRET_KEY` (64 символи), `SESSION_COOKIE_SECURE=true`, `LONTEX_ATLAS_BASE_URL/LOGIN/PASSWORD`, `ETOLL_DATABASE_URL`, `ALLOWED_HOSTS=transfin.uk,www.transfin.uk` (з 21.09). **Ніколи не друкувати.** Перед запуском коду застосунку на сервері завантажувати: `sudo -u transfin bash -c 'set -a; . /etc/transfin/transfin.env; set +a; …'` (значення не потрапляють в argv).
+- **nginx + Let's Encrypt:** `/etc/nginx/sites-available/transfin`; http і www → https apex; невідомий Host → 444 або відмова TLS; `/docs`, `/redoc`, `/openapi.json` → 404; обмеження частоти на логін. Застосунок сам перевіряє Host (`ALLOWED_HOSTS`, з 21.09): **локальні перевірки лише з `-H 'Host: transfin.uk'`**, інакше 400. На сервері ніщо не звертається до `127.0.0.1:8000` напряму (перевірено 21.09: таймери, cron, `atq`, скрипти, агентів моніторингу немає).
 - **PostgreSQL 18:**
 
   | База / роль | Для чого |
   |---|---|
   | `transfin_backend` (власник `transfin_backend`) | основна база сайту; схема `etoll` (власник `etoll_owner`) |
-  | `transfin` (власник `transfin`) | Ledger; alembic на 21.09 — `0005_currency_model` |
+  | `transfin` (власник `transfin`) | Ledger; alembic з 21.09 — `0006_audit_actor` |
   | `transfin_worker` | воркер eCherha: лише DML, default privileges на нові таблиці; **без `UPDATE` на `crossing_log`** (тимчасово, §4) |
   | `etoll_owner` (NOLOGIN) | власник усього в `etoll`; члени з `INHERIT FALSE, SET TRUE`: `transfin_backend`, `etoll_recorder` |
   | `etoll_recorder` (LOGIN, SCRAM) | запис позицій; лише DML |
 
   CONNECT/TEMP для PUBLIC на `transfin` і `postgres` забрано.
-- **Бекапи:** `transfin-pgdump.timer` щодня ~03:15 UTC → `/var/backups/transfin/{transfin_backend,transfin,globals}/`, 7 копій, скрипт `/usr/local/sbin/transfin-pgdump.sh` сам перевіряє дамп (`pg_restore --list`). **Копій поза сервером (off-site) немає.** Відкладена копія перед міграцією e-TOLL: `/var/backups/transfin/pre-etoll-transfin_backend_20260920T173502Z.dump`. Для `pg_restore` від `postgres` дамп треба спершу скопіювати в теку, яку `postgres` може читати (тека бекапів — `root 0700`).
+- **Бекапи:** `transfin-pgdump.timer` щодня ~03:15 UTC → `/var/backups/transfin/{transfin_backend,transfin,globals}/`, 7 копій, скрипт `/usr/local/sbin/transfin-pgdump.sh` сам перевіряє дамп (`pg_restore --list`). **Копій поза сервером (off-site) немає.** Відкладені копії: перед міграцією e-TOLL — `/var/backups/transfin/pre-etoll-transfin_backend_20260920T173502Z.dump`; перед P1–P8 — `pre-p1p8-transfin_backend_20260921T080917Z.dump` і `pre-p1p8-transfin_20260921T080917Z.dump`. Для `pg_restore` від `postgres` дамп треба спершу скопіювати в теку, яку `postgres` може читати (тека бекапів — `root 0700`).
 - **Користувач тунелю `transfin-tunnel`:** без shell і пароля; ключ дозволяє лише перенаправлення на `127.0.0.1:5432`; `/etc/ssh/sshd_config.d/20-transfin-tunnel.conf`.
 - **Alembic:** жоден ланцюжок не будує схему з порожньої бази; сервер зібрано через `create_all` + `alembic stamp head` 16.09.
 
@@ -47,15 +47,12 @@ systemctl restart transfin.service
 
 ---
 
-## 2. Що на сервері зараз і що чекає розгортання (21.09)
+## 2. Що на сервері зараз (21.09)
 
-- **На сервері:** код `62bbf44` (e-TOLL етап 1 + виправлення витоку й маскування логіна). Сайт `active`, recorder `active`/`enabled`.
-- **Закомічено, але НЕ розгорнуто:** P1 `cf154d2` (deny-by-default), P2 `1ca2f74` (ролі Ledger і автор), P3 `fa9f0f4` (критичні діри), P4 `ff4e81b` (сесія, restore), P5 `fabe3e3` (права всіх ролей), P6 `4d222d9` (PII), `91fd334` (тест без мережі), P7 `b42424e` (синтетичний Ledger), P8 (цей поділ).
-- **Для розгортання P1–P8 потрібно** (окремим СТОП, з планом):
-  - Ledger: міграція `0006_audit_actor` (лише `CREATE OR REPLACE` функції тригера) — репетиція на копії бази `transfin`;
-  - `ALLOWED_HOSTS` у `transfin.env`;
-  - перевірити, що `SESSION_SECRET_KEY` ≥ 32 символи (є 64) — інакше P4 не дасть сайту стартувати;
-  - роль `FINANCE` для другої людини — створювати акаунт лише після розгортання (рішення власника).
+- **На сервері:** код `961387e` — P1–P8 і P5a (розгорнуто 21.09, §6). Сайт `active`, recorder `active`/`enabled` (не перезапускався, його код не змінювався). Ledger — `0006_audit_actor`. Нерозгорнутого немає.
+- **Облікові записи сайту:** активний лише id 1 (власник). id 2 (ADMIN+LOGISTICIAN) неактивний з 17.09 ~12:26 UTC — див. §6.
+- **Журнал на сервері порожній:** `trip_journal`, `trip_journal_legs`, `routes`, `counterparties` — 0 рядків (з 16.09 кожна відповідь `/api/journal` — `[]`). Дані журналу — у локальній базі Mac; перенесення — окрема задача (§7), не почата.
+- **Роль `FINANCE`** для другої людини: тепер можна створити акаунт (роль є в картці персоналу); бачитиме лише «Фінанси».
 
 ---
 
@@ -133,6 +130,9 @@ eCherha захищена від ботів (headless блокується, вх�
 
 ---
 
+- **P1–P8 + P5a, розгортання (21.09, 08:09–08:30 UTC):** дамп обох баз + відкладені копії `pre-p1p8-*_20260921T080917Z`; код `62bbf44 → 961387e` (12 комітів, без змін залежностей і коду recorder); репетиція `0006` на відновленій копії `transfin` (`upgrade → downgrade → upgrade`, хеш тіла тригера `5a7fe6… → a58f48… → 5a7fe6…`, перевірка: з актором — `rehearsal:p1p8`, без — `db_trigger`; копію видалено); `0006` на справжній `transfin` з `lock_timeout=5s`; `ALLOWED_HOSTS` і перезапуск сайту — **виконав власник** (автоперевірка Claude Code блокувала ці команди); перевірки: `/` 200, `/api/*` без входу 401, чужий Host 400, сесії пережили перезапуск; власник після перезавантаження сторінки відкрив усі розділи — 0×403, 0×5xx, 0 помилок застосунку; `/api/ledger/currencies` 200. Воркер: перший цикл Active Queue після перезапуску — `checked=3 saved=14 errors=0`. Recorder не чіпали: 0 перезапусків, `password=` — 0. Спостереження 14 хв (до 08:30 UTC): 432×200, 2×401 (перевірки без входу), 0×403, 0×5xx, 0 перезапусків сайту й recorder; два цикли Active Queue поспіль успішні, `last_success_at` усіх трьох акаунтів оновлюється.
+- **Обліковий запис id 2 (перевірка 21.09, лише читання):** створений власником 17.09 12:11 UTC у Safari; з 12:12 по ~12:26 ним користувався **інший комп'ютер** (Mac, Chrome 152 — у власника того часу паралельно Chrome 153): 3 невдалі входи, вхід, перегляд усіх розділів, один запис — «запросити вхід» eCherha (таблицю акаунтів eCherha потім очищено й створено наново). Після деактивації — лише 401: вкладка опитувала сервер до 19.09 (інша мережа), останнє — невдалий вхід 19.09 21:14 Київ. Імовірно — сам працівник; nginx не записує користувача, тож це висновок, не доказ.
+
 ## 7. Чекає на власника
 
 - Змінити паролі IKK e-TOLL обох компаній (§5).
@@ -140,6 +140,7 @@ eCherha захищена від ботів (headless блокується, вх�
 - Надіслати довідку Lontex (§6) і з'ясувати: напруга живлення, час останнього пакета e-TOLL і стани SENT через API.
 - Видалити копії `transfin.env` після 27.09 (§4).
 - Перевірити зарядку Mac (§3).
+- Перенесення даних журналу (рейси, маршрути, контрагенти) з Mac на сервер — окрема задача з планом (рішення власника 21.09: не зараз).
 
 ## 8. Інфраструктура й гігієна
 
