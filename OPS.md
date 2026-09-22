@@ -26,7 +26,7 @@
   | `etoll_recorder` (LOGIN, SCRAM) | запис позицій; лише DML |
 
   CONNECT/TEMP для PUBLIC на `transfin` і `postgres` забрано.
-- **Бекапи:** `transfin-pgdump.timer` щодня ~03:15 UTC → `/var/backups/transfin/{transfin_backend,transfin,globals}/`, 7 копій, скрипт `/usr/local/sbin/transfin-pgdump.sh` сам перевіряє дамп (`pg_restore --list`). **Копій поза сервером (off-site) немає.** Відкладені копії: перед міграцією e-TOLL — `/var/backups/transfin/pre-etoll-transfin_backend_20260920T173502Z.dump`; перед P1–P8 — `pre-p1p8-transfin_backend_20260921T080917Z.dump` і `pre-p1p8-transfin_20260921T080917Z.dump`. Для `pg_restore` від `postgres` дамп треба спершу скопіювати в теку, яку `postgres` може читати (тека бекапів — `root 0700`).
+- **Бекапи:** `transfin-pgdump.timer` щодня ~03:15 UTC → `/var/backups/transfin/{transfin_backend,transfin,globals}/`, 7 копій, скрипт `/usr/local/sbin/transfin-pgdump.sh` сам перевіряє дамп (`pg_restore --list`). **Копій поза сервером (off-site) немає.** Відкладені копії: перед міграцією e-TOLL — `/var/backups/transfin/pre-etoll-transfin_backend_20260920T173502Z.dump`; перед P1–P8 — `pre-p1p8-transfin_backend_20260921T080917Z.dump` і `pre-p1p8-transfin_20260921T080917Z.dump`. Тека бекапів з 22.09 — `root:postgres 0730`: `postgres` може створити в ній дамп (раніше `pg_dump` від `postgres` падав з `Permission denied`), але не може читати чужі дампи. Для `pg_restore` від `postgres` файл треба спершу скопіювати в теку, яку `postgres` може читати.
 - **Користувач тунелю `transfin-tunnel`:** без shell і пароля; ключ дозволяє лише перенаправлення на `127.0.0.1:5432`; `/etc/ssh/sshd_config.d/20-transfin-tunnel.conf`.
 - **Alembic:** жоден ланцюжок не будує схему з порожньої бази; сервер зібрано через `create_all` + `alembic stamp head` 16.09.
 
@@ -196,7 +196,40 @@ eCherha захищена від ботів (headless блокується, вх�
 
 Коротка версія без деталей — HANDOFF §5. Порядок: Потік 1 по черзі; зауваження власника до Журналу — пакетом між етапами поточної роботи (блокуючі — одразу). Кожна міграція: прогін на відновленій копії продакшену (upgrade → downgrade → upgrade, скрипти в scratchpad сесії), `pg_dump` у `/var/backups/transfin/` (root 600), міграція **до** перезапуску `transfin.service` (застосунок робить `create_all` на старті), `PGOPTIONS="-c lock_timeout=5s"`.
 
-**Стан продакшену на кінець 22.09:** код `23e6c35`, alembic `a2d6e9f3c518`. Сьогоднішні розгортання: `42d3ebc` (позначка e-TOLL → вхід), `b5767fc` + `e4a7c9b2d315` (редагування оплаченого рейсу), `b7b6cc8`, `953d526` (заголовок і порядок Журналу, розділ в адресі), `83f268b` + `f1c5d8e2a907` («Каса» етап 1), `64fc63f` (логіст створює маршрут), `23e6c35` + `a2d6e9f3c518` (Tab у списках, номери за роком, «перетин»). Резервні копії перед кожною міграцією: `transfin_backend_before_<ревізія>_<час>.dump`.
+#### Рецепт розгортання з міграцією (22.09, після двох помилок цього дня)
+
+**Правило: alembic на сервері запускають ЛИШЕ з налаштуваннями сервісу (`EnvironmentFile=/etc/transfin/transfin.env`), ніколи без них.** 22.09 міграцію запустили без нього — alembic мовчки взяв локальну SQLite-базу за замовчуванням і почав мігрувати НЕ ТУ базу (продакшн-Postgres уцілів випадково, бо ланцюжок упав на другому кроці). Тепер `alembic/env.py` без `DATABASE_URL` **відмовляється працювати** (`app/alembic_guard.py`, тест `test_alembic_requires_database_url.py`); локальний дефолт самого застосунку лишився.
+
+```bash
+# 1. Резервна копія. pg_dump працює від postgres, тека — root:postgres 0730
+#    (postgres може створити файл, але не читати чужі дампи). Файли від
+#    pg_dump виходять 0644 — одразу привести до root 600.
+ssh root@46.224.18.229 'set -e; TS=$(date +%Y%m%d_%H%M%S); \
+  F=/var/backups/transfin/transfin_backend_before_<ревізія>_$TS.dump; \
+  sudo -u postgres pg_dump -Fc -d transfin_backend -f $F; \
+  chown root:root $F; chmod 600 $F; ls -l $F'
+
+# 2. Код
+ssh root@46.224.18.229 'cd /home/transfin/backend && sudo -u transfin git fetch -q origin \
+  && sudo -u transfin git merge -q --ff-only origin/ui/journal-redesign \
+  && sudo -u transfin git log --oneline -1'
+
+# 3. Міграція — ДО перезапуску (застосунок робить create_all на старті),
+#    з налаштуваннями сервісу і віртуальним оточенням .venv (НЕ venv).
+ssh root@46.224.18.229 'cd /home/transfin/backend && set -a && . /etc/transfin/transfin.env && set +a \
+  && sudo -u transfin env DATABASE_URL="$DATABASE_URL" PGOPTIONS="-c lock_timeout=5s" \
+     .venv/bin/alembic upgrade head'
+
+# 4. Перезапуск і перевірка
+ssh root@46.224.18.229 'systemctl restart transfin && sleep 5 && systemctl is-active transfin \
+  && curl -s -o /dev/null -w "%{http_code}\n" -H "Host: transfin.uk" http://127.0.0.1:8000/ \
+  && sudo -u postgres psql -d transfin_backend -X -t -c "select version_num from alembic_version;" \
+  && journalctl -u transfin -p err --since "3 min ago" --no-pager | tail -5'
+```
+
+Перевірка після кроку 3: `select version_num from alembic_version` має показати нову ревізію; якщо в лозі видно `Context impl SQLiteImpl` — команда пішла не в ту базу, зупинитись.
+
+**Стан продакшену на кінець 22.09:** код `452db53`, alembic `c7e2f4a9d136`. Сьогоднішні розгортання: `42d3ebc` (позначка e-TOLL → вхід), `b5767fc` + `e4a7c9b2d315` (редагування оплаченого рейсу), `b7b6cc8`, `953d526` (заголовок і порядок Журналу, розділ в адресі), `83f268b` + `f1c5d8e2a907` («Каса» етап 1), `64fc63f` (логіст створює маршрут), `23e6c35` + `a2d6e9f3c518` (Tab у списках, номери за роком, «перетин»), `2c511ba` (тло й контраст), `d2b8fce` (технічні борги: заборона мережі в тестах, ротація логу воркера, 22 відомі падіння, без справжніх номерів у тестах), `4cd1d5c` (логіст бачить стан eЧерги своїх компаній; список черги без власної рамки), `452db53` + `c7e2f4a9d136` («Чеки» етап 1). Резервні копії перед кожною міграцією: `transfin_backend_before_<ревізія>_<час>.dump`.
 
 ### Потік 1 — операційне
 1. **Журнал.** Відкрите питання: видалення для логістів — лише чернетки (власник, 22.09) — у роботі разом з «Касою» етап 2.
