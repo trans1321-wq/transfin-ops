@@ -192,6 +192,14 @@ eCherha захищена від ботів (headless блокується, вх�
 - Скрипти на Mac поза git: `~/transfin_tekson_setup.sh` (запис доступу Tekson: значення лише через stdin, атомарна заміна файла, решта рядків звіряється `cmp`, копія лишається); `~/transfin_chrome_cleanup.sh` (прибирання клонів Chrome: без аргументів — показ, `--apply` — видалення лише `code_sign_clone.*` старших за 60 хв і не відкритих, `--install-agent` — щоденно о 05:30 через LaunchAgent `com.transfin.chrome-clone-cleanup`, лог `~/Library/Logs/TransFin/chrome_clone_cleanup.log`).
 - Старі десктопні інструменти (`transfin.py`, `zvirka.py` і їхні копії) перейменовано в `.disabled` 18–19.09, щоб не читали eCherha паралельно з воркером.
 
+### Захист гілки `ui/journal-redesign` (23.09)
+
+GitHub Pro, репозиторій `trans1321-wq/transfin-backend`: зміни лише через pull request зі схваленням власника, **force push заборонено**. У Bypass list — **Repository admin (Always allow)**.
+
+- **Власник і Claude Code від його імені** комітять і пушать прямо в гілку, як раніше. Перевірено 23.09 пробним комітом `c092488`: push прийнято. GitHub при цьому друкує рядок `remote: - Changes must be made through a pull request.` — це повідомлення про правило, а не відмова; push проходить завдяки Bypass list. Відмова виглядала б інакше: `! [remote rejected]` і гілка на сервері лишилася б на старому коміті (перевіряти `git ls-remote origin ui/journal-redesign`).
+- **Віталій (swift1421@gmail.com)** — фінансовий облік, власний Claude Code — працює **через pull request**: гілка від `ui/journal-redesign` → PR → схвалення власника → злиття.
+- Якщо push колись справді відхилять — показати власникові текст помилки, **не обходити** (ні force, ні зміною правил).
+
 ## 9. План (власник, 22.09) — з операційними деталями
 
 Коротка версія без деталей — HANDOFF §5. Порядок: Потік 1 по черзі; зауваження власника до Журналу — пакетом між етапами поточної роботи (блокуючі — одразу). Кожна міграція: прогін на відновленій копії продакшену (upgrade → downgrade → upgrade, скрипти в scratchpad сесії), `pg_dump` у `/var/backups/transfin/` (root 600), міграція **до** перезапуску `transfin.service` (застосунок робить `create_all` на старті), `PGOPTIONS="-c lock_timeout=5s"`.
