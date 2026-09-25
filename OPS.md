@@ -76,7 +76,17 @@ systemctl restart transfin.service
 eCherha захищена від ботів (headless блокується, вхід — людина й капча), тому воркер працює на Mac власника у видимому згорнутому Chrome і пише в серверну базу через SSH-тунель.
 
 - **Тунель:** LaunchAgent `com.transfin.db-tunnel`, ssh `127.0.0.1:15432` → сервер `127.0.0.1:5432`, користувач `transfin-tunnel`, ключ `~/.ssh/transfin_tunnel_ed25519`, окремий `~/.config/transfin/known_hosts`. У plist уже є `ServerAliveInterval=15`, `ServerAliveCountMax=3`, `ExitOnForwardFailure`, `KeepAlive`, `ThrottleInterval=60`.
-- **Воркер:** LaunchAgent `com.transfin.queue-worker` → `scripts/queue_worker_launchagent/run_worker.sh` → `python3.12 -m app.queue_worker` з `~/Projects/backend`.
+- **Воркер (з 25.09 — окрема тека):** LaunchAgent `com.transfin.queue-worker` → `~/Projects/backend-worker/scripts/queue_worker_launchagent/run_worker.sh` → `python3.12 -m app.queue_worker` з **`~/Projects/backend-worker`** — git worktree репозиторію на локальній гілці `worker-live`, що стежить за `origin/ui/journal-redesign`. Перемикання гілок у `~/Projects/backend` воркер не чіпає. **У цій теці сесії Claude Code не працюють** (AGENTS §15).
+- **Оновлення воркера — лише свідомо, з «так» власника:**
+  ```bash
+  git -C ~/Projects/backend-worker status --short --branch   # має бути чисто
+  git -C ~/Projects/backend-worker fetch -q origin
+  git -C ~/Projects/backend-worker log --oneline HEAD..origin/ui/journal-redesign
+  git -C ~/Projects/backend-worker pull --ff-only
+  launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker
+  ```
+  Далі — перший цикл у лозі (`Active Queue polling succeeded … errors=0`). Відкат: `git -C ~/Projects/backend-worker checkout --detach <попередній коміт>` + `kickstart -k`, потім `git -C ~/Projects/backend-worker checkout worker-live`.
+- **Зміна plist:** лише через `install.sh` **з теки воркера** (`~/Projects/backend-worker/scripts/queue_worker_launchagent/install.sh --server 46.224.18.229`, без `--load` пише лише plist). Щоб launchd перечитав plist: `launchctl bootout …/com.transfin.queue-worker`, **дочекатись, поки процес вийде** (`pgrep -f app.queue_worker` порожній — вихід займає кілька секунд, інакше `bootstrap` дає помилку 5), потім `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.transfin.queue-worker.plist`. Копії plist до переїзду — `~/TransFin-private/launchagents-before-worker-folder-202609250820/`. Відкат переїзду: `install.sh` з `~/Projects/backend` + ті самі bootout/bootstrap.
 - **Приватні файли (0600, поза git):** `~/.config/transfin/worker.env` (`DATABASE_URL` без пароля + перемикачі: `QUEUE_DOCUMENT_REMINDERS_ENABLED=false`, `QUEUE_TELEGRAM_ENABLED=false`, `QUEUE_DRIVER_DETAILS_ENABLED` не задано = вимкнено, `QUEUE_JOURNAL_AUTO_TRIPS=true` з 22.09; копія до зміни — `worker.env.bak-20260922`), `~/.config/transfin/pgpass` (пароль `transfin_worker`), `~/.config/transfin/known_hosts`. Шаблони plist і `install.sh`/`uninstall.sh` — `scripts/queue_worker_launchagent/` у репозиторії.
 - **Профілі Chrome:** `~/Library/Application Support/TransFin/echerha_profiles/{1,2,3}` (~186 МБ). Сесії живуть тут і на інший комп'ютер не переносяться. Кеш сторінок: `~/Library/Caches/TransFin/echerha_profiles` (803 МБ; видаляти лише при зупиненому воркері).
 - **Облікові записи eCherha** (id на сервері й Mac однакові):
