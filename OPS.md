@@ -776,6 +776,12 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Розгортання:** перед — входів 0, прод `fa09d3b`, дерево чисте; `ui/journal-redesign` ff `69ced3a → 747f8ac`; сервер `merge --ff-only 747f8ac` (від `transfin`); `restart transfin` 20:41:49 UTC (`transfin-mcp` не чіпали).
   - **Після:** `/health` 200, `/` і `/finance.js` віддають новий перемикач, `transfin` і `transfin-mcp` active, помилок у журналі 0, дерево чисте.
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend checkout fa09d3b` + `restart transfin`.
+- **Перемикач компаній над вкладками «Фінансів» (`60dd767` = `323366a` + `60dd767`, гілка `finance-company-switch`) — сайт, 25.10 00:02 Київ** (Андрій: «так — розгортай 60dd767»).
+  - **Що:** один перемикач «ВОТРАНС | Транс Левел» на весь модуль — між меню і вкладками (Фінанси · Каса · Чеки · Учасники · Розподіл · Фінанси ТЛ); «Чеки» тепер лише вибраної компанії; вкладка без вибраної компанії каже про це. Людина лише з «Учасником» чи «Фінансами ТЛ» бачить перемикач зі свого списку (`/api/companies` їй закритий, не розширювали). Лише `static/*`, без міграцій — дамп не робився.
+  - **Підготовка:** 927 passed (усі UI-тести змінених файлів + `test_cards`, `test_fin_tl_api`, `test_route_policy`, `test_site_menu_ui`); браузер ПК + телефон на локальній SQLite (прибрано); рецензент СТОП (лише-PARTNER / лише-FIN_TL втрачали вкладку) → виправлено → ОК (`.review/ok-60dd767…`).
+  - **Розгортання:** перед — входів 0, прод `747f8ac`, дерево чисте, alembic/pg_dump/pytest 0; `ui/journal-redesign` ff `c109d14 → 60dd767`; сервер `merge --ff-only 60dd767`; `restart transfin` 21:02:52 UTC.
+  - **Після:** `/health` 200, `/` віддає `financeCompany(ownCompanies)` і 6 слотів, `transfin`, `transfin-mcp`, `transfin-fin-tl-bank.timer` active, помилок у журналі 0, дерево чисте.
+  - **Відкат:** `sudo -u transfin git -C /home/transfin/backend checkout 747f8ac` + `restart transfin`.
 
 ## 7. Чекає на власника
 
