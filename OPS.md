@@ -782,6 +782,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Розгортання:** перед — входів 0, прод `747f8ac`, дерево чисте, alembic/pg_dump/pytest 0; `ui/journal-redesign` ff `c109d14 → 60dd767`; сервер `merge --ff-only 60dd767`; `restart transfin` 21:02:52 UTC.
   - **Після:** `/health` 200, `/` віддає `financeCompany(ownCompanies)` і 6 слотів, `transfin`, `transfin-mcp`, `transfin-fin-tl-bank.timer` active, помилок у журналі 0, дерево чисте.
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend checkout 747f8ac` + `restart transfin`.
+- **Транс Левел у Ledger, крок 1: статті й рахунки як у ВОТРАНС (`0b1fbe2` = `3d0f2ae` + `0b1fbe2`, гілка `ledger-copy-chart`) — сайт і база Ledger `transfin`, 25.10 01:12–01:20 Київ** (Андрій: «так — роби за планом, 4 рахунки банку ТЛ з «Фінансів ТЛ»», «так» на запис, «так» на розгортання попри 3 червоні PUESC).
+  - **Що:** команда `python -m app.ledger_copy_chart` (копія плану рахунків і статей між компаніями за id, лише в порожню ціль, однією транзакцією); `3d0f2ae` — «Учасники» й «Фінанси ТЛ» не питають `/api/companies`. Міграцій немає.
+  - **Підготовка:** цільові 104 + 323 passed; повний прогін 7085 passed, 3 failed — чужі PUESC (`test_puesc_page_pg::test_rows_carry_their_state` — «закінчується сьогодні» у добу переведення годинника 25.10 = 25 год; два інші окремо зелені), Андрій дозволив розгортати. Репетиція на копії Ledger з дампу `transfin_before_ledger_copy_chart_20261024_212952.dump` (41/94, повтор — відмова rc 2, 2,9 с, 95 МБ з 256; копію прибрано). Рецензент ОК (`.review/ok-0b1fbe2…`).
+  - **Дамп перед записом:** `/var/backups/transfin/transfin_before_ledger_copy_apply_20261024_221243.dump` (1 976 296 байт, 803 рядки списку, sha256 `082d6fcb…d31db22b`), копія в `~/TransFin-private/backups` — sha256 збігається.
+  - **Розгортання:** прод `60dd767`, дерево чисте, alembic/pg_dump/pytest 0; `ui/journal-redesign` ff `ade9d72 → 0b1fbe2`; сервер `merge --ff-only 0b1fbe2`; `restart transfin` ≈22:14 UTC; `/health` 200, `/` 200, помилок 0.
+  - **Запис:** `systemd-run … -p User=transfin -p EnvironmentFile=… -p MemoryMax=256M … -m app.ledger_copy_chart --from 1 --to 2 --skip-under 2000 --name "3001=Вхідні залишки" --bank-from-fin-tl` — сухий прогін 37 + 4 / 94 (пропущено банк ВОТРАНС 1001–1004 і позики 2001–2005), потім `--apply` rc 0.
+  - **Після:** ТЛ — 41 рахунок, 94 статті (з ВОТРАНС різниця 0); банк ТЛ 1001 UAH …3167, 1002 UAH …3939, 1003 EUR …4981, 1004 EUR …0560, реквізити «АТ КБ «ПРИВАТБАНК»», власник «ПП «Транс Левел»»; ВОТРАНС 46/94 без змін; аудит `system:ledger-copy-chart` 41 + 94 insert; документів ТЛ 0.
+  - **Відкат:** дані — `pg_restore` з дампу вище або DELETE лише `company_id=2` (листові статті → групи → реквізити → рахунки від дочірніх), поки в ТЛ немає проводок, з `set_actor`; код — `checkout 60dd767` + `restart transfin`.
 
 ## 7. Чекає на власника
 
