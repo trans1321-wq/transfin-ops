@@ -844,7 +844,12 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Після (14:26):** `https://transfin.uk/health` 200, `/` 200, `/api/fin-tl/companies` без входу — 401; попереджень і помилок у журналі `transfin` — 0; збійних `transfin*` — 0; alembic `a9c4e2f7b5d3`; дерево чисте.
   - **Відкат:** від `transfin` `git reset --hard b4ab62e` + перезапуск `transfin` (лише код; даних крок не пише, поки вимикач вимкнено).
   - **Перший запуск банку з новим кодом (15:17 UTC):** `status` ok, картки ok, `holders`: `error` null, `written` false, 17 карток / 17 водіїв / 0 питань — як сухий прогін; `payment_cards` 0, `card_assignments` 0 (перевірено 15:32 UTC, `BEGIN READ ONLY`).
-  - **Вмикання** (`FIN_TL_CARD_HOLDERS=1` одним рядком, лише якщо рядка немає) — окреме «так» Андрія, при ньому, з окремою рецензією.
+- **Фінанси ТЛ: «картка → водій» УВІМКНЕНО (`FIN_TL_CARD_HOLDERS=1`) — 25.10 15:39 UTC / 17:39 Київ** («так» Андрія, при ньому; рецензент: СТОП (команда 2 читала журнал до кінця запуску) → ОК).
+  - **Перед:** рядка не було (`grep -c` → 0, 15:35 UTC); служба банку не працювала; прод `094fbfc`. **Дамп:** `/var/backups/transfin/transfin_backend_before_card_holders_on_20261025_153440.dump` (107 733 709 Б, `pg_restore --list` ok), sha256 `f07cbbb4546b94a8b9ce79a383f7dfccbceb02cc086dc4842f01e473213de040` — потоком у scratchpad, `mv -n` у `~/TransFin-private/backups`, `shasum` там — збіг.
+  - **Крок (15:39:11 UTC):** `grep -q '^FIN_TL_CARD_HOLDERS=' || echo 'FIN_TL_CARD_HOLDERS=1' >>` → `grep -c '^FIN_TL_CARD_HOLDERS=1$'` = 1; `root:transfin 640` без змін. Окремої копії файлу не робили (відкат — один `sed`). Перезапуск сайту не потрібен.
+  - **Запуск при Андрієві (15:39–15:39:55 UTC):** `systemctl start transfin-fin-tl-bank`, дочекались кінця; `Result=success`, `ExecMainStatus=0`; журнал цього запуску (`_SYSTEMD_INVOCATION_ID`): `holders` — `error` null, `written` true, 17 карток / 17 водіїв / 0 питань.
+  - **Після (15:40 UTC, `BEGIN READ ONLY`, лише кількості):** `payment_cards` privatbank = 17; `card_assignments` = 17 на 17 різних карток, усі `created_by IS NULL`, усі відкриті (`valid_to` NULL), `valid_from` 23.10–25.10.
+  - **Відкат:** `sed -i '/^FIN_TL_CARD_HOLDERS=1$/d' /etc/transfin/transfin.env` — далі лише рахує; записані 17 карток і 17 власників прибирати лише рішенням Андрія (з дампу вище або видаленням).
 
 ## 7. Чекає на власника
 
