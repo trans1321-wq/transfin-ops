@@ -843,6 +843,7 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Крок (14:25:16–14:25:46 UTC):** сервер — дерево чисте, HEAD `b4ab62e`; `ui/journal-redesign` ff `87a13d0 → 094fbfc`; від `transfin` `git merge --ff-only 094fbfc`; служба банку не працювала — перезапущено лише `transfin` 14:25:46.
   - **Після (14:26):** `https://transfin.uk/health` 200, `/` 200, `/api/fin-tl/companies` без входу — 401; попереджень і помилок у журналі `transfin` — 0; збійних `transfin*` — 0; alembic `a9c4e2f7b5d3`; дерево чисте.
   - **Відкат:** від `transfin` `git reset --hard b4ab62e` + перезапуск `transfin` (лише код; даних крок не пише, поки вимикач вимкнено).
+  - **Перший запуск банку з новим кодом (15:17 UTC):** `status` ok, картки ok, `holders`: `error` null, `written` false, 17 карток / 17 водіїв / 0 питань — як сухий прогін; `payment_cards` 0, `card_assignments` 0 (перевірено 15:32 UTC, `BEGIN READ ONLY`).
   - **Вмикання** (`FIN_TL_CARD_HOLDERS=1` одним рядком, лише якщо рядка немає) — окреме «так» Андрія, при ньому, з окремою рецензією.
 
 ## 7. Чекає на власника
