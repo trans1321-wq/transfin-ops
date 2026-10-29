@@ -966,6 +966,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Право сайту на нову колонку (питання Віталія):** власник `cash_movements` — `transfin_backend` (логін сайту), `has_column_privilege(... 'partner_source_id', 'INSERT'/'SELECT')` — t (у `transfin_worker` теж t); тригери `cash_movements_append_only`, `_no_truncate`, `_not_negative` увімкнені; рядків 0.
   - **Далі (Віталій):** його Claude у Chrome переносить залишки 12 гаманців ВОТРАНС з 1С через сайт (≈5 хв); на цей час не розгортати й не перезапускати `transfin`; після — рецензент Віталія і його текст для OPS §6.
 
+- **Воркер Mac оновлено `79c1556 → 4838651` (виправлення автопостановки) — 29.10 11:58 Київ** (Андрій: «Так, виправляй» → на «зливати в ui і оновлювати воркер самому, без ПЛАНУВАЛЬНИКА?» — «Так, сам»; сесії ПЛАНУВАЛЬНИК не було).
+  - **Причина:** з 27.10 ~18:45 єЧерга на пряме `goto(/cabinet/queues)` лишає сайт на «/cabinet» («Мої дані»); читання черг обходило це кліком у меню, а постановка — ні: `entry_failed` / `expected_active_queue_page_not_open` у job 40 (AC1934EO, 27.10), 41–42 (AC5386HM, 29.10), кабінет №2; нічого не надіслано. Знайдено 29.10 ~11:20 (прод лише читанням, знімок job 42 — «Мої дані»; копію знімка видалено).
+  - **Що:** `1a08eb7` (гілка `registration-view-recovery`) — `open_active_queues` у `_prepare` і `run_trial`: `goto` → якщо не `/cabinet/queues` — клік по єдиному пункту меню «Активні черги» (`_active_queue_nav_anchor`), інакше нічого і стоп, як раніше; + 3 тести на макеті. Повний прогін 7302 ✅ / 50 пропущено / 0 ❌ (7352 з 7352); рецензент ОК. Злиття `4838651` у `ui/journal-redesign` (від `1a08eb7` відрізняється лише `doc/HANDOFF.md`). З воркером поїхали лише цей код і документи; міграцій, залежностей, `worker.env`, plist — нічого.
+  - **Крок:** тека чиста, відкритих постановок у базі 0 → `git -C ~/Projects/backend-worker pull --ff-only` → `launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker` 11:58:48.
+  - **Після:** `Queue worker starting` 11:58:50; `PUESC RMPD … errors=0` 11:58:51; view-recovery кабінетів 1/2/3 `recovered=True` 11:59–12:01; `Active Queue polling succeeded: checked=3 saved=14 … errors=0` 12:02:55; `Monitored workload … errors=0` 12:02:58; `Traceback` і `could not be written` — 0. HEAD `4838651`, процес живий. Перша справжня постановка з меню — ще не було (лог: `active-queue view recovery … recovered=True`, далі «чекає підтвердження»).
+  - **Відкат:** `git -C ~/Projects/backend-worker checkout --detach 79c1556` + `kickstart -k`; назад на `worker-live` — лише з «так».
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
