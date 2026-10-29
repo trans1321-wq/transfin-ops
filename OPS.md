@@ -953,6 +953,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Відкат:** код — `sudo -u transfin git reset --hard 19d53a3` на гілці сервера + перезапуск `transfin`, `transfin-mcp` (старий код з новою схемою працює: колонка nullable, нова таблиця не читається, нові CHECK — надмножина старих). Схема — лише з «так»: `downgrade e5a1c7f3b902` (обидва кроки самі зупиняються, якщо є рахунки чи рухи каси з новими призначеннями). В ui — `git revert eaf6296`.
   - **Не оновлено:** воркер Mac (`~/Projects/backend-worker`, `f7b8bc7`) — тепер можна (міграція `a3c6e9f1b204` на проді), але лише з окремим «так» і разом з ПЛАНУВАЛЬНИКОМ (§3). Не блокує: `transfin_worker` має arwd і на `trip_journal_leg_invoices` (default privileges), як на `partner*`.
 
+- **Воркер Mac оновлено `f7b8bc7 → 79c1556` — 29.10 07:43 Київ** (Андрій: «так» на оновлення; на питання «Оновлювати воркер самому, без ПЛАНУВАЛЬНИКА?» — «Так, оновлюй сам»; сесії ПЛАНУВАЛЬНИК не було).
+  - **Що:** 164 коміти; код воркера, Планувальника, `queue_cycle`, `journal_auto_*`, `echerha_*` не змінювався; від прод-`eaf6296` змін поза `doc/` немає; 12 нових міграцій — усі вже на проді; залежності не мінялись, `worker.env` і plist не чіпали. Новий запис воркера — лише `UPDATE puesc_window_health … WHERE id = 1` (права з `d4b8e1f6a2c9`).
+  - **Рецензент:** СТОП (правило ПЛАНУВАЛЬНИКА, `pull` бере неперевірене, відкат, перевірка вікна PUESC) → виправлено → ОК 07:41.
+  - **Крок:** тека чиста, `merge-base --is-ancestor 79c1556 origin/ui/journal-redesign`, `rev-list --count HEAD..79c1556` = 164 → `git -C ~/Projects/backend-worker merge --ff-only 79c1556` → `launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker` 07:43:12.
+  - **Після:** `Queue worker starting` 07:43:13; `PUESC RMPD polling succeeded … errors=0` 07:43:14; `Active Queue polling succeeded: checked=3 saved=13 … errors=0` 07:47:20; `Monitored workload … errors=0` 07:47:24; `Traceback` і `PUESC window: the state could not be written` — 0. HEAD `79c1556`, процес живий.
+  - **Відкат:** `git -C ~/Projects/backend-worker checkout --detach f7b8bc7` + `kickstart -k`; лишатися detached до виправлення, назад на `worker-live` — лише з «так».
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
