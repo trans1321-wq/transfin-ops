@@ -960,6 +960,12 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Після:** `Queue worker starting` 07:43:13; `PUESC RMPD polling succeeded … errors=0` 07:43:14; `Active Queue polling succeeded: checked=3 saved=13 … errors=0` 07:47:20; `Monitored workload … errors=0` 07:47:24; `Traceback` і `PUESC window: the state could not be written` — 0. HEAD `79c1556`, процес живий.
   - **Відкат:** `git -C ~/Projects/backend-worker checkout --detach f7b8bc7` + `kickstart -k`; лишатися detached до виправлення, назад на `worker-live` — лише з «так».
 
+- **Гаманці ВОТРАНС (Віталій) — свіжі дампи обох баз від сесії Андрія перед перенесенням залишків з 1С — 29.10 06:06:51 UTC / 08:06 Київ, прод НЕ змінено** (Андрій переслав план Віталія: «дамп обох баз → назви й sha256 від Андрія → Claude Віталія переносить 12 гаманців через сайт»; рецензент: СТОП (перевірка дампу всередині `echo` не зупиняла команду) → виправлено (окремі присвоєння і `[ "$N" -gt 0 ]`) → ОК `.review/ok-79c1556…`).
+  - **Стан:** прод `eaf6296`, alembic `a2e2048bf303` (PR #16 `a3c6e9f1b204` — з 05:25 UTC, запис вище); сесії — лише root і `transfin-tunnel`; pg_dump/pg_restore/alembic 0.
+  - **Дампи:** `/var/backups/transfin/transfin_backend_before_wallets_vot_20261029_060651.dump` (115 960 107 Б, `600 root`, `--list` 3030, sha256 `55309b78c0c35246be8ef3dcde69089f236c07d371a63e9cffdd05fc4b6a6fa3`) і Ledger `/var/backups/transfin/transfin_before_wallets_vot_20261029_060651.dump` (2 013 327 Б, `600 root`, `--list` 805, sha256 `64565e37e147ad3a04fe36cc07c844e9a92ea88a360f52ccc022adea2fa4526b`); rc 0. Потоком (`umask 077`) у scratchpad → суми збіглися → `mv -n` у `~/TransFin-private/backups` → `shasum -a 256` там збіглися; у scratchpad не лишилось.
+  - **Право сайту на нову колонку (питання Віталія):** власник `cash_movements` — `transfin_backend` (логін сайту), `has_column_privilege(... 'partner_source_id', 'INSERT'/'SELECT')` — t (у `transfin_worker` теж t); тригери `cash_movements_append_only`, `_no_truncate`, `_not_negative` увімкнені; рядків 0.
+  - **Далі (Віталій):** його Claude у Chrome переносить залишки 12 гаманців ВОТРАНС з 1С через сайт (≈5 хв); на цей час не розгортати й не перезапускати `transfin`; після — рецензент Віталія і його текст для OPS §6.
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
