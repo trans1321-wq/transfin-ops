@@ -1001,6 +1001,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Після (18:06–18:07 UTC):** обидві active; `/health` з `Host: transfin.uk` 200 з 1-ї спроби; https 200; `/api/queue/active` без входу 401 (і з 127.0.0.1, і через https); журнали `transfin` / `transfin-mcp` з перезапуску — Traceback 0, ImportError 0, 5xx 0, `Application startup complete` по 1. Вкладки «Фінанси» після входу не переглядали (лише `curl`).
   - **Стан після: прод = `fcd3843`** (локальна гілка сервера `ui/journal-redesign` на `fcd3843`).
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard 2240511` + `systemctl restart transfin.service transfin-mcp.service`.
+- **Друк PDF RMPD із «Numer własny zgłoszenia» — розгорнуто `f6dee5c` — 29.10 18:15 UTC / 20:15 Київ** (Андрій ≈ 19:20 «так» на розгортання; у сесії розгортання 20:00 — «Так, розгортай обидва»). Причина: PDF RMPD AC4845HP …2902 віддавав 422 — підтвердження PUESC мало «Numer własny zgłoszenia» (`SourceDocumentId` + той самий `DocumentId` у корені), якого друк не знав. Без міграцій, дані не змінюються — дампа немає.
+  - **Код:** `b732fed` (гілка `rmpd-pdf-own-number`) — лише `app/puesc/visual/rmpd.py` і `test_puesc_visual.py`; злиття `f6dee5c` = ui `e16ba02` + `b732fed` (зробила сесія deploy-fin-rmpd). Повний прогін на злитті 19:43–20:09 Київ — 7346 ✅ / 50 пропущено / 0 ❌ (коміт — лише при зеленому прогоні).
+  - **Рецензент:** ОК на пуш злиття в ui (20:11 Київ) → пуш `e16ba02..f6dee5c` 18:12 UTC; окремий ОК на розгортання (20:14 Київ).
+  - **Розгортання:** сервер `fcd3843 → f6dee5c` (ff; `rmpd.py`, тест, `doc/HANDOFF.md`) 18:15:30 UTC, перезапуск `transfin` + `transfin-mcp` 18:15:39 UTC (не в хвилину таймера `fin-tl-bank` 18:17).
+  - **Після (18:15–18:16 UTC):** обидві active; `/health` з `Host` 200 з 1-ї спроби; https 200; `/api/queue/active` без входу 401; журнали з перезапуску — Traceback 0, ImportError 0, 5xx 0. Друк …2902 у браузері — перевіряє Андрій («Авто в Польщі» → …2902 → PDF; «Numer własny zgłoszenia» першим праворуч у «Dane informacyjne o zgłoszeniu», як у PUESC).
+  - **Стан після: прод = `f6dee5c`** (= вершина ui; локальна гілка сервера `ui/journal-redesign` на `f6dee5c`).
+  - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard fcd3843` + `systemctl restart transfin.service transfin-mcp.service`.
 
 ## 7. Чекає на власника
 
