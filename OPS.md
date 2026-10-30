@@ -1017,6 +1017,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **⚠️ Вікно:** аудит, прийнятий о 22:33 Київ (`doc/reports/2026-10-29_аудит_TransFin.md` §4.6, коміт `a2da7a0`), ставить розгортання сайту лише 09:00–20:00 Київ, без нічних; сесія розгортання прочитала HANDOFF до того коміту й побачила правило лише після перезапуску. Андрій 30.10 05:02 Київ: «Лишити» — без відкату.
   - **Стан після: прод = `d6e0fb3`** (локальна гілка сервера `ui/journal-redesign` на `d6e0fb3`; вершина ui `a2da7a0` вище — лише `doc/`).
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard f6dee5c` + `systemctl restart transfin.service transfin-mcp.service`.
+- **Картка тягача: вкладки, дати документів з одного джерела, готовність до автопостановки — розгорнуто `b36f23b` — 30.10 08:46 UTC / 10:46 Київ** (Андрій 30.10: «Так, комміть», «Так, розгортай»). Без міграцій, дані не змінюються — дампа немає.
+  - **Код:** `5f3195c` (гілка `truck-card-tabs`): `app/document_engine.py`, `app/echerha_registration_readiness.py`, `app/main.py` (`TruckOut.documents`; новий `GET /api/trucks/echerha-readiness`, OPERATIONS, свої компанії), `app/route_policy.py`, `static/index.html`, тести. Повний прогін 10:01–10:27 Київ — 7377 ✅ / 50 пропущено / 0 ❌ (коміт — лише при зеленому). `b36f23b` = `5f3195c` + ui `b2baa59` (лише HANDOFF).
+  - **Рецензент:** 1-й раз СТОП (10:33 Київ — заборонене вікно 10:20–10:45 з STAN §0; неповний перелік комітів) → після 10:45 ОК на пуш і розгортання, `.review/ok-b36f23b…`.
+  - **Розгортання:** пуш ui `b2baa59..b36f23b` 08:45 UTC → прод `fetch` (origin-ref `a2da7a0..b36f23b`) → `log HEAD..b36f23b` — 8 комітів (6 doc + `5f3195c` + злиття) → після таймера `etoll-period` 08:46:27 → `merge --ff-only b36f23b` (`d6e0fb3..b36f23b`) → перезапуск `transfin` + `transfin-mcp` 08:46:56 UTC.
+  - **Після (08:47 UTC):** обидві active; `/health` з `Host` 200 з 1-ї спроби; https 200; без входу `/api/queue/active` і `/api/trucks/echerha-readiness` — 401; журнали з 08:46:50 — Traceback 0, ImportError 0, 5xx 0, `Application startup complete` 2, відповідей 200 — 11. Картку тягача після входу сесія не відкривала.
+  - **Стан після: прод = `b36f23b`** (= вершина ui).
+  - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard d6e0fb3` + `systemctl restart transfin.service transfin-mcp.service`.
 
 ## 7. Чекає на власника
 
