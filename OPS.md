@@ -1070,6 +1070,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Стан після: прод = `6d9a83f`** (= вершина ui), alembic `c5d1e8a3f927`.
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard 216330c` + `systemctl restart transfin.service transfin-mcp.service`; додані рядки Довідників лишаються (лише налаштування, значень немає), видалення — окремим «так».
 
+- **Mac: воркер оновлено `4838651` → `61f4e22` (автовхід у PUESC, вимкнений) — 30.10 17:55 UTC / 19:55 Київ** (Андрій 30.10: «дозволяю», «Так, роби», «Так, коміть», «Так, оновлюй»).
+  - **Код:** `d7b1fb5` (гілка `puesc-auto-login`): `app/puesc/auto_login.py` (новий), `rmpd_worker.py`, `settings.py`, `test_puesc_auto_login.py`; злиття `2f7ad94` + `61f4e22` (свіжий ui `42cab9c`). Повний прогін на `61f4e22` — зібрано 7528: 7478 ✅ / 50 / 0 ❌ (19:25–19:53 Київ).
+  - **Рецензент:** СТОП (повний прогін не на тому коміті; `pull` без прив'язки до хеша; відкат через `checkout worker-live` повертав новий код) → виправлено → ОК, `.review/ok-61f4e22…`.
+  - **Кроки:** пуш ui `42cab9c..61f4e22` (ff) → воркер: дерево чисте, `fetch`, `origin/ui` = `61f4e22` (перевірено), `merge --ff-only 61f4e22`, HEAD = `61f4e22` (перевірено) → `launchctl kickstart -k …com.transfin.queue-worker` 19:55:47 Київ. 69 комітів ui (усе вже на проді `6d9a83f`); нова залежність `pypdf` — лише сайт, воркер її не імпортує. `worker.env` не змінювався.
+  - **Після:** воркер запущено 19:55:49 (pid 98256); PUESC RMPD — `errors=0`; перший цикл черги 20:00:04 — `Active Queue polling succeeded: checked=3 saved=14 moved=0 errors=0`.
+  - **Автовхід вимкнено** (`PUESC_AUTO_LOGIN_ENABLED` у `worker.env` немає). Увімкнення — лише біля Mac з Андрієм: Андрій сам `security add-generic-password -U -s "TransFin PUESC" -a <логін> -w`, потім рядок у `worker.env` і `kickstart -k`.
+  - **Відкат:** `git -C ~/Projects/backend-worker reset --hard 4838651` (на `worker-live`, дерево чисте) + `launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker` — без `checkout`.
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
