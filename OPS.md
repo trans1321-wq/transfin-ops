@@ -1034,6 +1034,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Стан після: прод = `673fa64`** (= вершина ui).
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard b36f23b` + `systemctl restart transfin.service transfin-mcp.service`.
 
+- **Mac: служба вікна PUESC `com.transfin.puesc-window` встановлена й запущена — 30.10 13:33 UTC / 15:33 Київ** (Андрій 30.10 ~15:25 «Так, встанови»; крок 6 плану «Служба вікна PUESC на Mac»; причина — заявка RMPD 10 AC8975EK о 15:18 Київ впала `no_window`). Сервер, база, сайт не чіпались; у PUESC нічого не надіслано.
+  - **Перед (15:27 Київ):** порт 127.0.0.1:9334 мовчав, plist служби не було, завантажені лише queue-worker, battery-awake, test-tmp-cleanup, db-tunnel; воркер `~/Projects/backend-worker` — `worker-live` на `4838651`, змін немає. Умова плану «перед цим 9334 відповідає» НЕ виконувалась — вікно відкрила служба, з дозволу Андрія (рецензент: прийнятно, найсвіжіший вибір власника).
+  - **Рецензент:** ОК на команду, `.review/ok-4818cd7…` (профіль ніким не зайнятий; той самий Chromium 130 з Playwright 1.48, що й `rmpd_trial`; ключі `--use-mock-keychain --password-store=basic`).
+  - **Команда:** `~/Projects/backend-worker/scripts/puesc_window_launchagent/install.sh --load` (15:33:52) — записано `~/Library/LaunchAgents/com.transfin.puesc-window.plist`, `launchctl bootstrap`.
+  - **Після (15:34 Київ):** служба `running`, runs 1, не виходила; 15:33:56 «PUESC window opened … log in to PUESC yourself»; 9334 відповідає `Chrome/130.0.6723.31`, одна сторінка `https://puesc.gov.pl/`. Картка на сайті (`PUESC_WINDOW_ALERT_ENABLED`) лишилась вимкненою.
+  - **Далі — Андрій:** увійти в PUESC у цьому вікні і натиснути «Я увійшов — заповнити знову» для AC8975EK (заявка `failed` сама не повторюється).
+  - **Відкат:** `~/Projects/backend-worker/scripts/puesc_window_launchagent/uninstall.sh` (вікно лишається — закрити вручну). Ознаки біди: у `~/Library/Logs/TransFin/puesc_window.err.log` перезапуски кожні 30 с, «busy» чи «silent».
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
