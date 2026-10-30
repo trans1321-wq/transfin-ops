@@ -1025,6 +1025,15 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Стан після: прод = `b36f23b`** (= вершина ui).
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard d6e0fb3` + `systemctl restart transfin.service transfin-mcp.service`.
 
+- **Накази на відрядження: країна — з RMPD тягача — розгорнуто `673fa64` — 30.10 13:18 UTC / 15:18 Київ** (Андрій 30.10: «Так, комміть», «Країну відрядження», після сухого прогону «Так, розгортай»). Без міграцій, дані не змінюються — дампа немає.
+  - **Код:** `9445f4d` (гілка `trip-country-from-rmpd`): `app/business_trip_orders/destination.py` (новий), `engine.py`, `service.py`, `alerts.py`, `provider.py`, `static/index.html`, 4 тести. Повний прогін 14:35–15:01 Київ — 7384 ✅ / 50 пропущено / 0 ❌ (коміт — лише при зеленому й рівно 7434 зібраних). `673fa64` = `9445f4d` + ui `f22d8bc` (лише HANDOFF).
+  - **Сухий прогін (15:1x Київ, лише читання):** код файлом (`git archive 9445f4d app`) у `/tmp/trip-dry-9445f4d`, `systemd-run` від `transfin` з `EnvironmentFile`, `MemoryMax=768M`, `PGOPTIONS=default_transaction_read_only=on`; `auto_run` без `--apply`: старий `b36f23b` — covered 48, mismatch 2, blocked 22, would_create 0 (0,9 с); новий — covered 48, mismatch 2, blocked 19, ready 3, would_create 2, failed 0 (1,1 с). Різниця лише перетини 76/127 (AC2985IB, ТЛ, 15.10 — той самий перетин двічі) і 138 (AC2174IB, ВОТРАНС, 28.10): RMPD …4463 і …2463 UA → PL → таймер 17:00 Київ запише ТЛ №136/2 від 15.10 і ВОТРАНС №69 від 27.10 (Андрію сказано до «Так, розгортай»). Теку видалено.
+  - **Рецензент:** ОК на пуш і розгортання, `.review/ok-673fa64…`.
+  - **Розгортання:** пуш ui `f22d8bc..673fa64` → прод дерево чисте, HEAD `b36f23b`, `fetch`, `log HEAD..673fa64` — 6 комітів (4 doc + `9445f4d` + злиття) → `merge --ff-only 673fa64` → перезапуск `transfin` + `transfin-mcp` 13:18:35 UTC (`transfin-orders` — oneshot за таймером, підхопить код о 15:00 UTC).
+  - **Після (13:19 UTC):** обидві active; `/health` з `Host` 200 з 1-ї спроби; https 200; без входу `/api/business-trip-orders` — 401; журнали з 13:18:30 — Traceback 0, ImportError 0, 5xx 0, `Application startup complete` 2. Таймер `transfin-orders` — наступний 15:00 UTC.
+  - **Стан після: прод = `673fa64`** (= вершина ui).
+  - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard b36f23b` + `systemctl restart transfin.service transfin-mcp.service`.
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
