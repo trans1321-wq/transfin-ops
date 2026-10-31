@@ -1134,6 +1134,11 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Після (до 19:38:51 Київ):** PUESC RMPD 19:34:37 errors=0; кабінети 1–3 прочитано (status=success); Active Queue 19:38:48 checked=3 saved=11 errors=0; Monitored workload 19:38:50 errors=0; ERROR/Traceback — 0; цикл «Licence registry» — не стартував (вимикач вимкнений).
   - **Відкат:** `git -C ~/Projects/backend-worker checkout --detach 61f4e22` + `kickstart -k`, потім `checkout worker-live`.
   - **Далі:** Андрій сам вписує `LICENSE_REGISTRY_ENABLED=true` у `~/.config/transfin/worker.env` і робить `kickstart -k`, вдень; перша звірка — того ж дня після 09:20 Київ (або одразу, якщо вже пізніше).
+- **Звірка з реєстром УВІМКНЕНА — 31.10 21:17 Київ / 19:17 UTC** (Андрій сам: рядок `LICENSE_REGISTRY_ENABLED=true` у `~/.config/transfin/worker.env` (рядок 23; дубль, що дописала моя команда, прибрано `sed` з перевіркою тексту) + `launchctl kickstart -k`; сесія файл не читала — лише вивід `grep -n LICENSE_REGISTRY`, який показав Андрій).
+  - **Воркер:** PID 91579 → 96452 (21:17:43); `Licence registry worker started` 21:17:45; GET/POST `middleware.dsbt.gov.ua` — 200; `checked=2 saved=2 errors=0`, 14,6 с; наступна спроба — за 600 с (цього дня вже не звіряє: обидві ok).
+  - **База (лише читанням):** `company_license_checks` id 1 — компанія 1, 21:17:47, ok, «Чинна», міжнародні вантажні t, розбіжності name, address; id 2 — компанія 2, 21:17:59, ok, «Чинна», міжнародні вантажні t, розбіжність name_latin.
+  - **Сайт (21:18 Київ):** Довідники → Компанії — 3 сигнали (ВОТРАНС: назва «ТЗОВ "ВОТРАНС"», адреса латиницею; Транс Левел: латиниця «PP "Trans Level"») з кнопками «Відкрити картку», «Відкласти на 7 днів», «Зрозуміло»; кнопки не натискались — рішення Андрія; консоль — помилок 0.
+  - **Вимкнути:** прибрати рядок із worker.env (або `=false`) + `kickstart -k`.
 
 ## 7. Чекає на власника
 
