@@ -1128,6 +1128,12 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Браузер (прод, 15:22 UTC):** Довідники → Компанії — обидві компанії, сигналів реєстру немає (звірок ще не було — сторож мовчить); консоль — помилок 0.
   - **НЕ зроблено:** воркер Mac (`~/Projects/backend-worker`) не оновлено — окреме «так», разом із ПЛАНУВАЛЬНИК; `LICENSE_REGISTRY_ENABLED` у worker.env вмикає Андрій сам, вдень.
   - **Відкат:** таймери → `systemctl stop transfin` → `systemd-run … .venv/bin/alembic downgrade b7e3f1a9c264` (з дерева `e34d771`) → `sudo -u transfin git -C /home/transfin/backend reset --hard 4b70dd3` → start → health. Крайній випадок — pg_restore з дампу 15:16:31.
+- **Воркер Mac оновлено `61f4e22 → 8a1b3d8` — 31.10 19:34 Київ / 17:34 UTC** (Андрій 31.10 ≈19:30 Київ: «Оновлюй сам» — без ПЛАНУВАЛЬНИКА; рецензент ОК для `8a1b3d8`).
+  - **Перед:** `worker-live` чистий, behind 22 (картка компанії 1–4, Довідники → Тягачі, звірка з реєстром у воркері, читач техпаспорта сайту); `requirements.txt` додає лише `anthropic` — у python3.12 воркера його немає, але воркер його не імпортує (перевірено імпортом `app.queue_worker` і `app.license_registry_worker` цим Python з коду `e34d771`); у лозі — лише звичайні цикли, форм і RMPD-задач у роботі немає.
+  - **Крок:** `fetch` → `pull --ff-only` → `launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker` (PID 81657 → 91579).
+  - **Після (до 19:38:51 Київ):** PUESC RMPD 19:34:37 errors=0; кабінети 1–3 прочитано (status=success); Active Queue 19:38:48 checked=3 saved=11 errors=0; Monitored workload 19:38:50 errors=0; ERROR/Traceback — 0; цикл «Licence registry» — не стартував (вимикач вимкнений).
+  - **Відкат:** `git -C ~/Projects/backend-worker checkout --detach 61f4e22` + `kickstart -k`, потім `checkout worker-live`.
+  - **Далі:** Андрій сам вписує `LICENSE_REGISTRY_ENABLED=true` у `~/.config/transfin/worker.env` і робить `kickstart -k`, вдень; перша звірка — того ж дня після 09:20 Київ (або одразу, якщо вже пізніше).
 
 ## 7. Чекає на власника
 
