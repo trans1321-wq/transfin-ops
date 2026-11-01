@@ -1153,6 +1153,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **НЕ зроблено:** воркер Mac (`~/Projects/backend-worker`) — окреме «так» («сам чи з ПЛАНУВАЛЬНИКОМ»); потім дамп і `alembic upgrade head` (`76e3ef7af3f9`) — окреме «так»; перед ним перезапустити всі служби з `app.models`.
   - **Відкат:** таймери → `systemctl stop transfin` → `alembic downgrade c8f2d4a7e915` з дерева `a43d2c0` (відмовить, якщо вписано клас/скан ЄКМТ, `puesc_carrier_name`, видалено обліковий запис PUESC або норма тягача ≠ компанії) → `git reset --hard e34d771` → старт служб → health; крайній випадок — pg_restore дампу 17:39:24.
 
+- **Воркер Mac оновлено `8a1b3d8 → a43d2c0` — 01.11 19:51:53 Київ / 17:51 UTC** (Андрій 01.11: «Сам, зараз» — без ПЛАНУВАЛЬНИКА; рецензент ОК для `a43d2c0`).
+  - **Ціль — гілка картки `a43d2c0` (як сервер), НЕ вершина ui:** `fetch origin company-card-ui-0111` → `merge-base --is-ancestor` → `merge --ff-only a43d2c0`. **`worker-live` тепер розходиться з `origin/ui/journal-redesign`** (має картку, не має «Фінансів» Віталія і docs ui): наступне оновлення воркера пройде `--ff-only`, лише коли ціль міститиме `a43d2c0` (спершу злити картку в ui, або будувати гілку від бази з `a43d2c0` — напр. `autoreg-interrupted-retry` з `worker_restart_guard`).
+  - **Перед:** дерево чисте; `requirements.txt`, `run_worker.sh`, `deploy/` без змін; імпорт `app.queue_worker`, `app.license_registry_worker`, `app.puesc.rmpd_worker`, `app.puesc.pulpit_run` з `git archive a43d2c0` цим python3.12 — ок; у лозі лише цикли читання; відкритих `echerha_registration_jobs` (pending/preparing/awaiting_confirmation/confirmed/submitting) 0, `rmpd_create_jobs` (created/filling/awaiting_send) 0 — перевірено безпосередньо перед kickstart.
+  - **Крок:** `launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker` (PID 36796 → 49531).
+  - **Після (до 19:54 Київ):** Licence registry 19:51:56 errors=0; PUESC RMPD 19:51:56 / 19:52:57 / 19:53:58 errors=0; Active Queue — кабінети 1 і 2 status=success; ERROR/Traceback 0. Що змінилось для воркера: форма єЧерги бере e-mail водія (`dc38ffd`), готовність вимагає e-mail водія; ORM без старих колонок companies.
+  - **Відкат:** `git -C ~/Projects/backend-worker reset --hard 8a1b3d8` + `kickstart -k` — лише ДО `76e3ef7af3f9`; після неї — лише на коміт із `4f7d485`.
+  - **Далі (окреме «так»):** дамп обох баз + копія → `alembic upgrade head` (`76e3ef7af3f9`) → перезапуск усіх служб з `app` на сервері.
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
