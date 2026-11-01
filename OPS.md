@@ -1161,6 +1161,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Відкат:** `git -C ~/Projects/backend-worker reset --hard 8a1b3d8` + `kickstart -k` — лише ДО `76e3ef7af3f9`; після неї — лише на коміт із `4f7d485`.
   - **Далі (окреме «так»):** дамп обох баз + копія → `alembic upgrade head` (`76e3ef7af3f9`) → перезапуск усіх служб з `app` на сервері.
 
+- **Старі колонки companies видалено — міграція `76e3ef7af3f9` — 01.11 18:02:31–18:02:33 UTC / 20:02 Київ** (Андрій 01.11: «Так, зараз» на «Видаляти старі колонки компаній з бази зараз?»; рецензент ОК для `a43d2c0`: інших процесів зі старим ORM, що читають companies, немає — сервер: усі служби з 17:41 на `a43d2c0`, таймери — свіжі процеси; Mac: воркер `a43d2c0` з 19:51, `com.transfin.puesc-window` (старий код) у базу не ходить).
+  - **Перед (17:57 UTC):** входів 0; alembic/pg_dump/pytest 0; сервер `a43d2c0`, alembic `30f94cd1c1c2`.
+  - **Дамп (17:57:24 UTC):** `transfin_backend_before_76e3ef7af3f9_20261101_175724.dump` (122 042 481 Б, `--list` 3071) sha256 `201eb0bab29d914714dd1a912c673eb605adc92ebf106a37891986a41685dba6`; Ledger `transfin_before_76e3ef7af3f9_20261101_175724.dump` (2 023 790 Б, 790) `99319b6400faa3d042bce93c4b9e72edea6612556093846e0e6876f7e9eb97d2`; потоком у scratchpad → збіглись → `mv -n` у backups → збіглись.
+  - **Репетиція (17:58–18:00 UTC):** копія `transfin_reh_drop_20261101_175724` (createdb -O transfin_backend + pg_restore від postgres, rc 0, лог 0); скрипт `reh_drop.py` у `/tmp/reh_drop.*` (суми збіглись), systemd-run User=transfin EnvironmentFile, WorkingDirectory=/home/transfin/backend (код `a43d2c0`), lock 5s / statement 60s: up head 2,23 с (колонок і CHECK немає, компаній 2, власник transfin_backend) → down `30f94cd1c1c2` 1,53 с (повернулись) → up 1,42 с. Копію й папку видалено.
+  - **Міграція:** `systemd-run … MemoryMax=256M PGOPTIONS lock/statement .venv/bin/alembic upgrade head` — `30f94cd1c1c2 → 76e3ef7af3f9`, 2 с. Перевірка: версія `76e3ef7af3f9`; трьох колонок немає; компаній 2; health з Host 200; `/api/companies`, `/api/trucks` у браузері — 200; журнал служб з 18:02:30 — error/Traceback/UndefinedColumn 0; лог воркера Mac — ERROR 0. Служби не перезапускались (уже на ORM без колонок).
+  - **Відкат:** `alembic downgrade 30f94cd1c1c2` (колонки повертаються порожніми, норма 30 з CHECK) або pg_restore дампу 17:57:24 (колишні значення: пароля не було, e-mail обох компаній однаковий, норма 32 — уже в тягачах).
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
