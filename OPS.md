@@ -1168,6 +1168,12 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Міграція:** `systemd-run … MemoryMax=256M PGOPTIONS lock/statement .venv/bin/alembic upgrade head` — `30f94cd1c1c2 → 76e3ef7af3f9`, 2 с. Перевірка: версія `76e3ef7af3f9`; трьох колонок немає; компаній 2; health з Host 200; `/api/companies`, `/api/trucks` у браузері — 200; журнал служб з 18:02:30 — error/Traceback/UndefinedColumn 0; лог воркера Mac — ERROR 0. Служби не перезапускались (уже на ORM без колонок).
   - **Відкат:** `alembic downgrade 30f94cd1c1c2` (колонки повертаються порожніми, норма 30 з CHECK) або pg_restore дампу 17:57:24 (колишні значення: пароля не було, e-mail обох компаній однаковий, норма 32 — уже в тягачах).
 
+- **Картка компанії: поля GPS без автозаповнення — розгорнуто `7282498` — 01.11 18:48 UTC / 20:48 Київ** (Андрій 01.11: «не хоче зберігати» — «Компанію збережено, але введений доступ GPS — ні»; Chrome вписував пароль сайту в токен GPS → «Так, виправ» → «Так, розгортай»; рецензент ОК для `7282498`).
+  - **Зміна:** лише `static/index.html` (NO_AUTOFILL: autocomplete="new-password" + readonly до фокусу — токен Wialon, логін/пароль Lontex, «Новий пароль» персоналу) і тест; без міграцій і Python. Тести 4 файли 103 ✅.
+  - **Розгортання (18:48 UTC):** дерево чисте → `fetch origin company-card-ui-0111` → `merge-base --is-ancestor HEAD 7282498` → `merge --ff-only 7282498`; локальна гілка сервера `ui/journal-redesign` тепер на `7282498` (НЕ вершина origin/ui). Служби НЕ перезапускались: сторінку віддає `ui_build.page_html` з диска (build за mtime).
+  - **Перевірка (18:49–18:52 UTC):** health з Host 200; `/api/ui-version` build `5119ad771643`; API без входу 401; журнал transfin за 5 хв — error/Traceback 0. Браузер: картки обох компаній — `gps-*-token` readonly, autocomplete new-password, порожнє; «введений доступ GPS» не спрацьовує. «Зберегти» не натискав.
+  - **Відкат:** `sudo -u transfin git reset --hard a43d2c0` у `/home/transfin/backend` (лише static, без перезапуску). Воркер Mac не оновлювався (сторінку не віддає).
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
