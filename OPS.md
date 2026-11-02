@@ -1203,6 +1203,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Відкрите:** старі вкладки браузера (до 06:36) — Ctrl+F5: старий JS шле `company_id` замість номера кабінету. Воркер Mac (`a43d2c0`) лише читає `ikk_accounts.company_id` / `ikk_runs` — сумісний, але оновити його (окреме «так», «сам чи з ПЛАНУВАЛЬНИКОМ») треба ДО другого кабінету в компанії чи видалення кабінету.
   - **Відкат:** таймери й etoll-stage2 стоп → `alembic downgrade 76e3ef7af3f9` з дерева `312d117` (відмовить, якщо в компанії вже >1 кабінету або є видалені) → `git reset --hard 6078e68` (від transfin) → перезапуск служб → health; крайній випадок — pg_restore дампу 06:31:20.
 
+- **Воркер Mac оновлено `a43d2c0 → 312d117` — 02.11 09:48:36 Київ / 07:48 UTC** (Андрій 02.11: «Сам, зараз» на «Оновити воркер Mac зараз?» — без ПЛАНУВАЛЬНИКА; оновлювала сесія «Довідники: нічого не роби», сесія IKK лише читала й віддала; рецензент ОК).
+  - **Ціль — прод `312d117`** (гілка `claude/ikk-several-cabinets-519892` = `6078e68` + IKK), НЕ вершина ui (ui має «Фінанси» Віталія, не має картки/IKK). `worker-live` ff-иться лише на нащадків `312d117`.
+  - **Перед (09:45–09:48):** дерево чисте; `requirements.txt`, `deploy/` без змін, у `scripts/queue_worker_launchagent` — новий `restart_when_idle.sh`; `app/models.py`, `app/queue_worker.py`, `app/puesc/` без змін; імпорт `app.queue_worker`, `app.license_registry_worker`, `app.puesc.rmpd_worker`, `app.puesc.pulpit_run`, `app.worker_restart_guard` з `git archive 312d117` цим python3.12 — ок. У лозі 09:25–09:26 ERROR «PUESC RMPD step failed» — `Connection refused 127.0.0.1:15432` (обрив db-tunnel), не схема; з 09:47 цикли успішні.
+  - **Оновлення:** `fetch origin claude/ikk-several-cabinets-519892` → `merge-base --is-ancestor` → `merge --ff-only 312d117` (09:48:25) → `scripts/queue_worker_launchagent/restart_when_idle.sh --wait 20`: guard `{"ok": true, "busy": []}` → `kickstart -k`, exit 0; PID 49531 → 20769.
+  - **Після (до 09:53:56):** 23 цикли, ERROR/Traceback 0; Monitored workload, PUESC RMPD, Licence registry — succeeded. `com.transfin.puesc-window` (PID 49878, з тієї ж теки) не перезапускався — `app/puesc/` не змінювався.
+  - **Відкат:** поки код `312d117` на місці — `python -m app.worker_restart_guard` з налаштуваннями воркера (код 0) → `git -C ~/Projects/backend-worker reset --hard a43d2c0` → одразу `launchctl kickstart -k gui/$(id -u)/com.transfin.queue-worker` (у `a43d2c0` немає ні скрипта, ні guard).
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
