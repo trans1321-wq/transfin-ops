@@ -1218,6 +1218,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Результат:** Андрій поставив план «за часом» (бути на Ягодині 10.11 21:53) → задача 53 AC2418HT: prepared 15:48:06, **registered 15:49:07 Київ** (кабінет 2, Ягодин – Дорогуськ (порожні), причіп AC3657XP).
   - **Відкат:** `python -m app.worker_restart_guard` (код 0) → `git -C ~/Projects/backend-worker reset --hard 312d117` → `scripts/queue_worker_launchagent/restart_when_idle.sh --wait 20`.
 
+- **Фінанси / Каса Віталія — РОЗГОРНУТО вершину ui `4945e56` — 02.11 16:29:31 Київ / 14:29:31 UTC** (Андрій 02.11: «так» на розгортання PR #19, #20, #22; рецензент ОК, `.review/ok-4945e56…`; сесію FABLE попереджено, підтвердила).
+  - **Код:** `312d117 → 4945e56` (ff; IKK злито в ui зранку `a6d6f83`). Змінено: `app/allocation/service.py`, `app/cash/{api,service}.py`, `app/finance_debts.py`, `app/ledger_reports.py`, `app/main.py`, `app/route_policy.py`, `static/{allocation,cash_ledger,finance}.js`, `static/index.html`. Міграцій немає, alembic лишається `21581f55d7fb`; requirements/deploy без змін. Повний прогін на `4945e56`: 7757 ✅ / 50 / 0 ❌ (7807 зібрано).
+  - **Дамп не брали:** лише код, дані під час розгортання не змінюються; останній дамп обох баз — 02.11 06:31:20 UTC.
+  - **Перед (14:29 UTC):** входів 0; дерево чисте, HEAD `312d117`; відкритих постановок 0; alembic/pg_dump/pg_restore/pytest 0.
+  - **Розгортання:** від `transfin`: `fetch origin ui/journal-redesign` → `merge-base --is-ancestor HEAD 4945e56` → `merge --ff-only 4945e56`; `systemctl restart transfin transfin-mcp` (mcp — через `mcp_access` → `route_policy`) — обидві active. health з Host 200, https 200, API без входу 401; RSS transfin 175 МБ; журнал обох з 14:29:25 до 14:34 — error/Traceback 0.
+  - **Браузер (прод, 16:30–16:34 Київ, як Андрій):** «Дебітори й кредитори» — дебітори ВОТРАНС 5 РЕЙСІВ, кредитори — залишки Ledger; «Операції» — ✎ у 76 з 155 рядків (рухи банку/каси, у нарахуваннях немає); «Звіт» → Тягачі, «дохід — фрахт за Журналом» — запит 0,42 с; «Розподіл» за 27.07 — «💡 AC8587HT» у 2026-000967/000968; «Каса» — «+ Каса» є, рухів у касах обох компаній 0 → «Виправити»/«Копія» ще нема на чому показати.
+  - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset --hard 312d117` + `systemctl restart transfin.service transfin-mcp.service` + health. Документи Ledger (сторно / виправлення каси), проведені новим кодом до відкату, лишаються.
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
