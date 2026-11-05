@@ -1266,6 +1266,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Дампи:** `/var/backups/transfin/transfin_backend_before_vit_20261105_125017.dump` (130 302 212 Б, `600 root`, `--list` 3138, sha256 `4819888b8344c59cacbc00eb44a74c09e6d8046d4e57dddf610b163d8fb444f9`) і Ledger `/var/backups/transfin/transfin_before_vit_20261105_125017.dump` (2 041 719 Б, `600 root`, `--list` 805, sha256 `1a6283faec483d98bdc25433908ec8b74250d27ad21dd3ea3a53506a72afedf8`); rc 0.
   - **Копія на Mac:** потоком у scratchpad → суми збіглися → `mv -n` у `~/TransFin-private/backups` → `shasum -a 256` там збіглися; у scratchpad не лишилось.
 
+
+- **Дамп перед міграцією `d3f7a9c2e5b1` (CMR → пропозиція в РЕЙС) і репетиція — 05.11 21:50:19 UTC / 23:50 Київ, прод НЕ змінено** (Андрій: «Rebase і дамп»; інших сесій немає — ListAgents порожній).
+  - **Дамп:** `/var/backups/transfin/transfin_backend_before_d3f7a9c2e5b1_20261105_215019.dump` (130 990 187 Б, `600 root`, `pg_restore --list` ок), sha256 `0921774485d42614b3719f045104ecdd04c5ab1536da0ed223b5c274b10f70ca`. Прод: PostgreSQL 18.6, ревізія `b4e8d2f6a1c3`.
+  - **Копія на Mac:** потоком у scratchpad → сума збіглась → `mv -n` у `~/TransFin-private/backups` → `shasum -a 256` там збіглась.
+  - **Репетиція (Mac, кластер 5438, pg_restore 18 з Postgres.app — Homebrew 16 дамп 18 не читає):** відновлення 39 с без помилок (126 РЕЙСІВ); `upgrade` від `transfin_backend` — 1 с: таблиця `trip_field_proposals` (власник `transfin_backend`, `transfin_worker` без доступу), `draft` у counterparties/locations/routes (`false`, NOT NULL), перевірка `directory_changes.entity_type` + counterparty/location/route; воркер колонку `draft` читає. Новий код на копії: довідники, картки, GPS-місця 8 РЕЙСІВ — ≤ 0,2 с на РЕЙС, пам'ять 107 МБ. `downgrade` → `upgrade` — ок.
+  - **Прибрано:** база `transfin_rehearsal_cmr`, ролі `transfin_backend`/`transfin_worker`/`transfin` на 5438 (створені для репетиції), дамп у scratchpad.
+  - **Розгортання — окреме «так»:** спершу міграція (з `EnvironmentFile`), потім перезапуск `transfin` і `transfin-mcp` — без міграції ORM падатиме на `draft`.
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
