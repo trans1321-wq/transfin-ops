@@ -1274,6 +1274,14 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Прибрано:** база `transfin_rehearsal_cmr`, ролі `transfin_backend`/`transfin_worker`/`transfin` на 5438 (створені для репетиції), дамп у scratchpad.
   - **Розгортання — окреме «так»:** спершу міграція (з `EnvironmentFile`), потім перезапуск `transfin` і `transfin-mcp` — без міграції ORM падатиме на `draft`.
 
+
+- **Розгортання CMR → РЕЙС `94820d0` + міграція `d3f7a9c2e5b1` — 05.11 23:14 UTC / 06.11 01:14 Київ** (Андрій: «давай зараз», «забий на те вікно»; разом із чужим `38d1f47` «Ledger: історія готівки» — Андрій «так, разом»; reviewer: СТОП → виправлено (дамп і Ledger; злиття + міграція одним ssh після перевірки разових служб) → ОК, `.review/ok-94820d0…`; інших сесій немає).
+  - **Перед (23:07–23:13 UTC):** код `a668cff`, alembic `b4e8d2f6a1c3`, porcelain 0, входів 0, idle in transaction > 1 хв 0, диск 17 ГБ вільно; разові служби неактивні.
+  - **Дампи (23:12:44):** `transfin_backend_before_d3f7a9c2e5b1_deploy_20261105_231244.dump` (131 092 422 Б, `--list` 3138, sha256 `1ba8bd92cda75e365e0c151f85cc278cea193c413f1b9ca9e9f8c79b4a6a7f8e`) і Ledger `transfin_before_d3f7a9c2e5b1_deploy_20261105_231244.dump` (2 129 596 Б, `--list` 805, sha256 `da84a068799cb4cc9ff4a1f2cea17f6b4f22256c7cbd61425e39db3ce068dc90`); копії потоком у scratchpad → суми збіглися → `mv -n` у `~/TransFin-private/backups` → `shasum` там збіглися.
+  - **Код і міграція (одним ssh, 23:14:03–23:14:08):** перевірка etoll-period/fin-tl-bank/echerha-stats/queue-monitor/orders — неактивні; porcelain 0 → `fetch` → `merge-base --is-ancestor HEAD 94820d0` → `merge --ff-only 94820d0` (від `transfin`; разом `f9ba4c4` воркера й `38d1f47` Ledger); `systemd-run … EnvironmentFile MemoryMax=256M PGOPTIONS lock 5s / statement 60s .venv/bin/alembic upgrade d3f7a9c2e5b1` → версія `d3f7a9c2e5b1`. `ui/journal-redesign` перед тим ff `aa33220 → 94820d0`.
+  - **Після (23:14:22–23:14:37):** `restart transfin transfin-mcp` — active; `/health` з Host 200 (сайт піднявся за ~15 с), `/` 200, `127.0.0.1:8010/mcp` без токена 401, `/api/journal/cmr-alerts` без входу 401, upload з недійсним посиланням 404; журнал служб з 23:14 — error/Traceback/UndefinedColumn 0.
+  - **Відкат:** `sudo -u transfin git reset -q --hard a668cff` + `systemctl restart transfin transfin-mcp` (нова схема старому коду не заважає: колонка `draft` з типовим `false`, ширша перевірка, нова таблиця). Схему — `alembic downgrade b4e8d2f6a1c3` тим самим `systemd-run` (відмовить, якщо вже є пропозиції чи чернетки).
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
