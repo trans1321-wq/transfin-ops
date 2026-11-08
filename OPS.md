@@ -1283,6 +1283,13 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Разові за розкладом на новому коді:** etoll-period 23:16:07 — success, fin-tl-bank 23:17:13 — success (error_kind/error_text null); помилок у журналах `transfin`, `transfin-mcp`, etoll-period, fin-tl-bank з 23:14 — 0 (23:17:49 UTC). Воркер Mac (`queue_worker.app.log`) з 01:14 Київ — ERROR 0.
   - **Відкат:** `sudo -u transfin git reset -q --hard a668cff` + `systemctl restart transfin transfin-mcp` (нова схема старому коду не заважає: колонка `draft` з типовим `false`, ширша перевірка, нова таблиця). Схему — `alembic downgrade b4e8d2f6a1c3` тим самим `systemd-run` (відмовить, якщо вже є пропозиції чи чернетки).
 
+- **Розгортання e-TOLL «порожній ранковий звіт — ⏳ до 12:00» `b0e5643` — 08.11 15:17 UTC / 17:17 Київ** (Андрій «Так, розгортай»; без міграції; reviewer: СТОП (вікно Наказів 16:50–17:15, trap для таймера, §15, перевірки) → виправлено → ОК, `.review/ok-b0e5643…`; жива сесія FABLE — «Transfin відкриття» / «готово»).
+  - **Перед:** код `94820d0`, porcelain 0; etoll-check / etoll-period / orders неактивні; поза вікнами STAN §0. Дампу немає — дані й схема не змінюються.
+  - **Код (одним ssh, 15:17:21–15:17:28):** перевірка вікон і зайнятих служб → `trap` вмикання `transfin-etoll-period.timer` → стоп таймера → `fetch` → `merge-base --is-ancestor` → `merge --ff-only b0e5643` (від `transfin`) → `restart transfin`. `ui/journal-redesign` ff `504146f → b0e5643`.
+  - **Після:** `/health` з Host 200, `/` 200, `/api/etoll/period-checks` без входу 401, таймер etoll-period active, журнал `transfin` з 15:17:20 error/Traceback 0; сторінка e-TOLL у Chrome відкривається, «Проїзди за вчора» є, консоль без помилок.
+  - **§16 сухий прогін за 07.11 (systemd-run, EnvironmentFile, MemoryMax=768M):** exit 0, `privileges_ok` true; 10 тягачів, 142 ділянки, оплачено 141, не оплачено 0, очікує 0, лише у звіті 1; Lontex 8 тягачів / 141 оплачено, Wialon 7 / 43; пізні нарахування за 7 діб — 53, медіана 19,7 год, макс 30,6 год; 37,4 с, пік 97 МБ.
+  - **Відкат:** `sudo -u transfin git reset -q --hard 94820d0` + `systemctl restart transfin` (схема та сама).
+
 ## 7. Чекає на власника
 
 - AC2284BH: наш старий тягач, свідомо в IKK ВОТРАНС для мобільного застосунку e-TOLL — на сторінці e-TOLL натиснути «Навмисно в IKK» з поясненням. NU042183 (Транс Левел) — теж невідомий в IKK: вирішити.
