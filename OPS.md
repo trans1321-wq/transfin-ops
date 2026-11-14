@@ -1361,6 +1361,12 @@ eCherha захищена від ботів (headless блокується, вх�
   - **Перед тим (лише читання, 14.11 14:55 UTC):** AC0953HA 10–13.11 сухо: 10.11 поза Польщею; 11.11 1/0/0; 12.11 Tekson 110 опл. / 0, Wialon 112 / 2 (лише Wialon); 13.11 110 / 0 / 1 очікує. Пропущених оплат немає.
   - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset -q --hard 9b1995f` + `systemctl restart transfin-etoll-stage2 transfin`.
 
+- **Tekson: бокс Lontex не в картці — 🔴 одразу — прод `db35ec1 → 280d39f` (14.11 15:47 UTC / 17:47 Київ)** (Андрій «Так, роби» / «Так, розгортай»; рецензент ОК після двох СТОП: повний прогін і точний хеш). Причина: нова RMPD AC8975EK `RMPD20261114000182` (09:04) — рейсу в Tekson немає, служба мовчала: у полі «Lontex» картки `U23-MT01BB-9` (e-TOLL), бокса AC8975EK серед 17 у кабінеті Tekson немає; PUESC бачить основний `Z24-SZ47WG-9`, запасний `Z22-FE37ZZ-8` — ні (09:04).
+  - **Код:** гілка `tekson-silent-skip-prod` = `db35ec1` + `280d39f` (лише `app/puesc/tekson_sent.py` і тест); у ui — злиття `1e81d47`, вершина `e95c993`. PR #38 Віталія (`8dee8b1`) на прод НЕ занесено — ff на точний хеш `280d39f`, не на ui.
+  - **Тести:** повний прогін на `280d39f` — 7923 ✅ 50 ⏭ 0 ❌; 12 файлів PUESC на злитті — 239 ✅.
+  - **Кроки:** «Transfin відкриття» сесії e-TOLL; чисте дерево, HEAD `db35ec1`; `fetch origin tekson-silent-skip-prod`, `HEAD..280d39f` = 1 коміт; `merge --ff-only 280d39f`; restart `transfin`, `transfin-mcp`, `transfin-puesc-tekson` — active; health 200; журнал transfin з 15:47 — помилок 0. Міграцій немає, дамп не робився.
+  - **Перший цикл служби (15:47:03 UTC):** `new 10, due 2, failed 2, requests 0, alarms 2` — `box_not_in_card` для AC8975EK `…0182` (картка U23-MT01BB-9) і AC4586BX `…5430` (поле порожнє), до Tekson жодного запиту. Чи створено ці рейси в Tekson вручну — не перевіряли (доступу немає).
+  - **Відкат:** `sudo -u transfin git -C /home/transfin/backend reset -q --hard db35ec1` + `systemctl restart transfin transfin-mcp transfin-puesc-tekson` (події FAILED лишаються в журналі, нешкідливі).
 
 ## 7. Чекає на власника
 
